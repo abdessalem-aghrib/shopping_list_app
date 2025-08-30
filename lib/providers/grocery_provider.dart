@@ -16,4 +16,18 @@ class GroceryListNotifier extends StateNotifier<List<GroceryItem>> {
   removeItem(GroceryItem groceryItem) {
     state = List.of(state..remove(groceryItem));
   }
+
+  setItems(List<GroceryItem> newItems) {
+    state = newItems;
+  }
+
+  insertAt(int index, GroceryItem groceryItem) {
+    state = List.of(state..insert(index, groceryItem));
+  }
+
+  init(List<GroceryItem> newItems) {
+    state.clear();
+
+    state.addAll(newItems);
+  }
 }

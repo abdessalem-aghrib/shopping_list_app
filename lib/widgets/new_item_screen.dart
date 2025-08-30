@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:shopping_list_app/data/categories.dart';
 import 'package:shopping_list_app/models/category.dart';
 import 'package:shopping_list_app/models/grocery_item.dart';
@@ -18,6 +21,49 @@ class _NewItemScreenState extends ConsumerState<NewItemScreen> {
   String? name;
   int? quantity;
   Category? category;
+
+  addItem() async {
+    bool isValid = formKey.currentState!.validate();
+
+    if (isValid) {
+      formKey.currentState!.save();
+
+      // add this item to database
+      var url = Uri.https(
+        "shopping-list-app-639c5-default-rtdb.firebaseio.com",
+        "shopping_list.json",
+      );
+
+      var response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "name": name!,
+          "quantity": quantity!,
+          "category": category!.title,
+        }),
+      );
+
+      if (response.statusCode >= 400) {
+        return;
+      }
+
+      Map<String, dynamic> data = json.decode(response.body);
+
+      ref
+          .read(groceryProvider.notifier)
+          .addItem(
+            GroceryItem(
+              id: data["name"],
+              name: name!,
+              quantity: quantity!,
+              category: category!,
+            ),
+          );
+
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,29 +148,7 @@ class _NewItemScreenState extends ConsumerState<NewItemScreen> {
                     },
                     child: Text('Reset'),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      bool isValid = formKey.currentState!.validate();
-
-                      if (isValid) {
-                        formKey.currentState!.save();
-
-                        ref
-                            .read(groceryProvider.notifier)
-                            .addItem(
-                              GroceryItem(
-                                id: DateTime.now().toString(),
-                                name: name!,
-                                quantity: quantity!,
-                                category: category!,
-                              ),
-                            );
-
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    child: Text('Add Item'),
-                  ),
+                  ElevatedButton(onPressed: addItem, child: Text('Add Item')),
                 ],
               ),
             ],
